@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pop a bubble 🫧</title>
+<style>
+:root{--bg1:#d6ecfb;--bg2:#eaf6ff;--ink:#35506e;--card:#f8fcff;--accent:#6aaee8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#12263f;--bg2:#1b3556;--ink:#e3f1ff;--card:#223f63}}
+:root[data-theme="dark"]{--bg1:#12263f;--bg2:#1b3556;--ink:#e3f1ff;--card:#223f63}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg2));background-attachment:fixed;color:var(--ink);font-family:Georgia,'Times New Roman',serif;text-align:center}
+header{padding:32px 20px 8px}
+h1{font-size:clamp(26px,6vw,40px);margin:0 0 6px;font-weight:normal;font-style:italic}
+p.sub{margin:0;opacity:.75}
+#count{margin-top:10px;font-size:14px;letter-spacing:.08em;opacity:.7}
+#stage{max-width:760px;margin:24px auto;padding:0 16px 60px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:18px;justify-items:center}
+.bubble{position:relative;width:110px;height:110px;border:1px solid rgba(255,255,255,.75);border-radius:50%;cursor:pointer;padding:0;
+background:radial-gradient(ellipse 22% 14% at 28% 22%,rgba(255,255,255,.95),rgba(255,255,255,0) 100%),radial-gradient(circle at 74% 80%,rgba(255,255,255,.55) 0 4%,rgba(255,255,255,0) 11%),radial-gradient(circle,rgba(255,255,255,.04) 55%,rgba(200,230,255,.22) 100%);
+box-shadow:inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 14px rgba(255,150,220,.18),0 4px 14px rgba(90,150,210,.22);
+animation:bob var(--d,4s) ease-in-out var(--l,0s) infinite;transition:transform .15s}
+.bubble::before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+background:conic-gradient(from 20deg,rgba(255,120,200,.5),rgba(120,200,255,.55),rgba(140,255,200,.45),rgba(255,240,150,.4),rgba(190,140,255,.5),rgba(255,120,200,.5));
+-webkit-mask:radial-gradient(circle,transparent 58%,#000 92%);mask:radial-gradient(circle,transparent 58%,#000 92%);opacity:.8}
+.bubble:hover{transform:scale(1.08)}
+.bubble.pop{animation:none;pointer-events:none;transform:scale(1.5);opacity:0;transition:transform .25s,opacity .25s}
+.bubble.done{visibility:hidden}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:var(--x,6px) -16px}}
+.spark{position:fixed;pointer-events:none;z-index:5;line-height:1;margin:-10px 0 0 -10px}
+#veil{position:fixed;inset:0;background:rgba(30,60,100,.35);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+#veil.show{display:flex}
+#card{background:var(--card);max-width:420px;width:100%;border-radius:22px;padding:30px 26px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:rise .3s ease}
+#msg{font-size:20px;line-height:1.5;margin:0 0 16px}
+#hint{font-size:12px;letter-spacing:.06em;opacity:.45}
+@keyframes rise{from{transform:translateY(20px) scale(.95);opacity:0}to{transform:none;opacity:1}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Pop a bubble, baby 🫧</h1>
+  <div id="count"></div>
+</header>
+<div id="stage"></div>
+<div id="veil"><div id="card"><p id="msg"></p><div id="hint">tap anywhere to continue</div></div></div>
+
+<script>
+// ✏️ EDIT YOUR MESSAGES HERE: one bubble per line. Add or remove freely.
+const messages = [
+  "I love you so much",
+  "You are my special and favorite human being",
+  "You make life better",
+  "You work so hard and I'm really proud of you",
+  "I'm so happy I get to see you grow as a person and experience new things",
+  "I'm so grateful for you, I really appreciate everything you do for me",
+  "I can't wait to see you",
+  "I really care about you and your wellbeing",
+  "I love making you laugh",
+  "I love playing games with you",
+  "I'm so excited to cook for you again, especially Mickey Mouse pancakes",
+  "Imagine me giving you a bigggg kissss",
+  "I need to give you forehead kisses",
+  "I can't wait to hold you again",
+  "I'll always be there for you",
+  "You are the best boyfriend I could've ever asked for"
+];
+for(let i = messages.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [messages[i], messages[j]] = [messages[j], messages[i]]; }
+const finale = "That's every bubble, but my love for you never runs out";
+
+const stage = document.getElementById('stage');
+const veil = document.getElementById('veil');
+const msgEl = document.getElementById('msg');
+const countEl = document.getElementById('count');
+let popped = 0, last = false;
+
+function updateCount(){ countEl.textContent = popped + ' / ' + messages.length + ' popped'; }
+updateCount();
+
+let ctx;
+function popSound(){
+  try{
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(700 + Math.random()*400, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + .12);
+    g.gain.setValueAtTime(.25, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .15);
+    o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .16);
+  }catch(e){}
+}
+
+function sparks(x, y){
+  const hearts = ['💖','🩷','💕','💗','💓','💞'];
+  for(let i = 0; i < 24; i++){
+    const s = document.createElement('span');
+    s.className = 'spark';
+    s.textContent = hearts[i % hearts.length];
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    s.style.fontSize = (14 + Math.random() * 14) + 'px';
+    document.body.appendChild(s);
+    const a = Math.PI * 2 * i / 24, r = 60 + Math.random() * 80;
+    s.animate([{transform:'translate(0,0) scale(.4)',opacity:1},
+      {transform:'translate(' + Math.cos(a)*r + 'px,' + (Math.sin(a)*r - 30) + 'px) scale(1.1)',opacity:0}],
+      {duration:900, easing:'ease-out'}).onfinish = () => s.remove();
+  }
+}
+
+function show(text){ msgEl.textContent = text; veil.classList.add('show'); }
+
+messages.forEach((text, i) => {
+  const b = document.createElement('button');
+  b.className = 'bubble';
+  b.setAttribute('aria-label', 'Bubble ' + (i + 1));
+  b.style.setProperty('--d', (3.4 + Math.random() * 2) + 's');
+  b.style.setProperty('--l', (-Math.random() * 4) + 's');
+  b.style.setProperty('--x', (Math.random() * 20 - 10) + 'px');
+  b.addEventListener('click', e => {
+    const r = b.getBoundingClientRect();
+    sparks(r.left + r.width / 2, r.top + r.height / 2);
+    popSound();
+    b.classList.add('pop');
+    setTimeout(() => b.classList.add('done'), 260);
+    popped++; updateCount();
+    last = popped === messages.length;
+    show(text);
+  });
+  stage.appendChild(b);
+});
+
+veil.addEventListener('click', () => {
+  veil.classList.remove('show');
+  if(last){ last = false; setTimeout(() => show(finale), 250); }
+});
+</script>
+</body>
+</html>
